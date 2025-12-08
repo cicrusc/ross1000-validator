@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Upload, Download, FileText, AlertCircle, CheckCircle, RotateCcw, AlertTriangle, Edit, X } from 'lucide-react'
+import { Upload, Download, FileText, AlertCircle, CheckCircle, RotateCcw, AlertTriangle, Edit, X, Info, ChevronDown } from 'lucide-react'
 
 // ROSS 1000 Field definitions according to Tracciato Record di integrazione dati (v.4 – 20/10/2022)
 // Note: Codice Italia = '000' secondo le tabelle ufficiali ISTAT
@@ -100,6 +100,7 @@ export default function Home() {
   const [generatedXml, setGeneratedXml] = useState<string>('') // XML generato per l'invio ROSS 1000
   const [showLogin, setShowLogin] = useState<boolean>(false) // Controlla la visibilità del menu di login
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false) // Controlla se l'utente ha effettuato il login
+  const [errorsExpanded, setErrorsExpanded] = useState<boolean>(false) // Controlla espansione lista errori
   const [loginCredentials, setLoginCredentials] = useState({
     email: '',
     password: '',
@@ -142,6 +143,7 @@ export default function Home() {
     setGeneratedXml('') // Resetta l'XML generato
     setShowLogin(false) // Resetta la visibilità del login
     setIsLoggedIn(false) // Resetta lo stato del login
+    setErrorsExpanded(false) // Resetta espansione lista errori
     setLoginCredentials({ email: '', password: '', regione: '' }) // Resetta le credenziali di login
     setActiveTab('valid') // Resetta la scheda attiva a 'valid'
     setSelectedRecord(null)
@@ -250,7 +252,10 @@ export default function Home() {
           <div className="flex items-center gap-1">
             {/* Campi Select */}
             {fieldId === 1 && (
-              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+              <Select value={editingValue} onValueChange={(newValue) => {
+                const paddedValue = newValue.padEnd(field.length, ' ').substring(0, field.length)
+                saveInlineEdit(recordIndex, `field_${fieldId}`, paddedValue)
+              }}>
                 <SelectTrigger className="h-7 text-xs w-full">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
@@ -264,7 +269,10 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 5 && (
-              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+              <Select value={editingValue} onValueChange={(newValue) => {
+                const paddedValue = newValue.padEnd(field.length, ' ').substring(0, field.length)
+                saveInlineEdit(recordIndex, `field_${fieldId}`, paddedValue)
+              }}>
                 <SelectTrigger className="h-7 text-xs w-20">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
@@ -275,7 +283,10 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 19 && (
-              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+              <Select value={editingValue} onValueChange={(newValue) => {
+                const paddedValue = newValue.padEnd(field.length, ' ').substring(0, field.length)
+                saveInlineEdit(recordIndex, `field_${fieldId}`, paddedValue)
+              }}>
                 <SelectTrigger className="h-7 text-xs w-full">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
@@ -289,7 +300,10 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 20 && (
-              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+              <Select value={editingValue} onValueChange={(newValue) => {
+                const paddedValue = newValue.padEnd(field.length, ' ').substring(0, field.length)
+                saveInlineEdit(recordIndex, `field_${fieldId}`, paddedValue)
+              }}>
                 <SelectTrigger className="h-7 text-xs w-full">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
@@ -303,7 +317,10 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 24 && (
-              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+              <Select value={editingValue} onValueChange={(newValue) => {
+                const paddedValue = newValue.padEnd(field.length, ' ').substring(0, field.length)
+                saveInlineEdit(recordIndex, `field_${fieldId}`, paddedValue)
+              }}>
                 <SelectTrigger className="h-7 text-xs w-20">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
@@ -314,7 +331,10 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 26 && (
-              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+              <Select value={editingValue} onValueChange={(newValue) => {
+                const paddedValue = newValue.padEnd(field.length, ' ').substring(0, field.length)
+                saveInlineEdit(recordIndex, `field_${fieldId}`, paddedValue)
+              }}>
                 <SelectTrigger className="h-7 text-xs w-28">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
@@ -830,13 +850,32 @@ export default function Home() {
       }
     })
 
-    // 2. Aggiorna tutti gli stati in modo sincronizzato
+    // 2. Esegui la validazione avanzata PRIMA di aggiornare gli stati
+    const advancedResult = validateRecordAdvanced(updatedRecord, recordIndex)
+
+    // Aggiungi gli errori dalla validazione avanzata a newFieldErrors
+    if (advancedResult.hasErrors) {
+      advancedResult.errors.forEach(error => {
+        if (error.fieldId) {
+          const fieldKey = `${recordIndex}_${error.fieldId}`
+          newFieldErrors[fieldKey] = true
+          // Rimuovi dai campi corretti se ora è invalido
+          delete newCorrectedFields[fieldKey]
+          // Aggiungi anche il messaggio di errore
+          if (error.message) {
+            recordErrors.push(error.message)
+          }
+        }
+      })
+    }
+
+    // 3. Aggiorna tutti gli stati in modo sincronizzato
     setValidationErrors(prev => ({
       ...prev,
       [recordIndex]: recordErrors
     }))
 
-    // 3. Aggiorna fieldErrors rimuovendo prima tutti gli errori per questo record
+    // 4. Aggiorna fieldErrors in un UNICO update (base + avanzati)
     setFieldErrors(prev => {
       const result = { ...prev }
       ROSS_FIELDS.forEach(field => {
@@ -846,21 +885,17 @@ export default function Home() {
       return { ...result, ...newFieldErrors }
     })
 
-    // 4. Aggiorna i campi corretti
+    // 5. Aggiorna i campi corretti
     setCorrectedFields(prev => ({
       ...prev,
       ...newCorrectedFields
     }))
 
-    // 5. Aggiorna la validazione avanzata
-    const advancedResult = validateRecordAdvanced(updatedRecord, recordIndex)
+    // 6. Aggiorna la validazione avanzata
     setAdvancedValidation(prev => ({
       ...prev,
       [recordIndex]: advancedResult
     }))
-
-    // 6. Notifica che il record è stato validato (ma non forzare il cambio scheda)
-    // L'utente manterrà il controllo sulla scheda attiva
   }
 
   // Funzione di validazione dettagliata per ogni campo secondo il tracciato ROSS 1000
@@ -1126,8 +1161,8 @@ export default function Home() {
       }
     }
 
-    // 2. Validazione cross-campi per date
-    if (dataArrivo && dataPartenza && modalita === '2') {
+    // 2. Validazione cross-campi per date (sempre attiva quando entrambe le date sono presenti)
+    if (dataArrivo && dataPartenza) {
       const parseDate = (dateStr: string) => {
         const [day, month, year] = dateStr.split('/').map(Number)
         return new Date(year, month - 1, day)
@@ -1136,23 +1171,27 @@ export default function Home() {
       const arrivo = parseDate(dataArrivo)
       const partenza = parseDate(dataPartenza)
 
+      // Controllo: Data Partenza deve essere successiva a Data Arrivo
       if (partenza <= arrivo) {
         result.errors.push({
           isValid: false,
           level: 'error',
-          message: 'Data partenza deve essere successiva alla data arrivo',
+          message: 'Data Partenza deve essere successiva a Data Arrivo',
           fieldId: 18
         })
       }
 
-      const giorniSoggiorno = Math.ceil((partenza.getTime() - arrivo.getTime()) / (1000 * 60 * 60 * 24))
-      if (giorniSoggiorno > 365) {
-        result.warnings.push({
-          isValid: true,
-          level: 'warning',
-          message: `Soggiorno prolungato: ${giorniSoggiorno} giorni`,
-          fieldId: 18
-        })
+      // Warning per soggiorni molto lunghi
+      if (partenza > arrivo) {
+        const giorniSoggiorno = Math.ceil((partenza.getTime() - arrivo.getTime()) / (1000 * 60 * 60 * 24))
+        if (giorniSoggiorno > 365) {
+          result.warnings.push({
+            isValid: true,
+            level: 'warning',
+            message: `Soggiorno prolungato: ${giorniSoggiorno} giorni`,
+            fieldId: 18
+          })
+        }
       }
     }
 
@@ -1377,13 +1416,32 @@ export default function Home() {
       }
     })
 
+    // Esegui la validazione avanzata PRIMA di aggiornare gli stati
+    const advancedResult = validateRecordAdvanced(record, recordIndex)
+
+    // Aggiungi gli errori dalla validazione avanzata a newFieldErrors
+    if (advancedResult.hasErrors) {
+      advancedResult.errors.forEach(error => {
+        if (error.fieldId) {
+          const fieldKey = `${recordIndex}_${error.fieldId}`
+          newFieldErrors[fieldKey] = true
+          // Rimuovi dai campi corretti se ora è invalido
+          delete newCorrectedFields[fieldKey]
+          // Aggiungi anche il messaggio di errore
+          if (error.message) {
+            recordErrors.push(error.message)
+          }
+        }
+      })
+    }
+
     // Aggiorna gli stati di errore
     setValidationErrors(prev => ({
       ...prev,
       [recordIndex]: recordErrors
     }))
 
-    // Aggiorna fieldErrors rimuovendo prima tutti gli errori per questo record e poi aggiungendo quelli nuovi
+    // Aggiorna fieldErrors in un UNICO update (base + avanzati)
     setFieldErrors(prev => {
       const result = { ...prev }
       // Rimuovi tutti gli errori per questo record
@@ -1391,7 +1449,7 @@ export default function Home() {
         const fieldKey = `${recordIndex}_${field.id}`
         delete result[fieldKey]
       })
-      // Aggiungi solo i nuovi errori
+      // Aggiungi tutti i nuovi errori (base + avanzati)
       return { ...result, ...newFieldErrors }
     })
 
@@ -1401,8 +1459,7 @@ export default function Home() {
       ...newCorrectedFields
     }))
 
-    // Aggiorna anche la validazione avanzata
-    const advancedResult = validateRecordAdvanced(record, recordIndex)
+    // Aggiorna la validazione avanzata
     setAdvancedValidation(prev => ({
       ...prev,
       [recordIndex]: advancedResult
@@ -2046,13 +2103,33 @@ export default function Home() {
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold text-slate-800">ROSS 1000</h1>
-                  <p className="text-xs text-slate-500">Validazione File TXT/XML</p>
+                  <p className="text-xs text-slate-500">Validazione File TXT</p>
                 </div>
               </div>
             </div>
 
             {/* Azioni Header */}
             <div className="flex items-center gap-3">
+              {/* Info Button with Tooltip */}
+              <div className="relative group">
+                <button
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-all"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+                <div className="absolute right-0 top-10 w-72 bg-slate-800 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl">
+                  <p className="font-semibold mb-2">ROSS 1000 Validator</p>
+                  <p className="mb-2">Strumento per la validazione dei file TXT secondo il tracciato ROSS 1000 (v.4 – 20/10/2022).</p>
+                  <p className="mb-1"><strong>Come usare:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-300">
+                    <li>Carica un file TXT</li>
+                    <li>Visualizza i record validi/non validi</li>
+                    <li>Modifica i campi cliccandoci sopra</li>
+                    <li>Scarica il file corretto</li>
+                  </ul>
+                  <div className="absolute -top-2 right-4 w-3 h-3 bg-slate-800 rotate-45"></div>
+                </div>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -2120,27 +2197,38 @@ export default function Home() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-slate-800">
-                    {Object.values(validationErrors).reduce((total, errors) => total + errors.length, 0)}
+                    {records.filter((_, index) => hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0).length}
                   </div>
-                  <div className="text-xs text-slate-500">Errori Rilevati</div>
+                  <div className="text-xs text-slate-500">Record con Errori</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Errors Alert */}
+        {/* Errors Alert - Collapsible */}
         {errors.length > 0 && (
-          <Alert className="mb-6 bg-red-50 border-red-200" variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-1">
-                {errors.map((error, index) => (
-                  <div key={index}>{error}</div>
-                ))}
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setErrorsExpanded(!errorsExpanded)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-red-100/50 transition-colors"
+            >
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-4 w-4" />
+                <span className="font-medium">{errors.length} errori di parsing rilevati</span>
               </div>
-            </AlertDescription>
-          </Alert>
+              <ChevronDown className={`h-4 w-4 text-red-500 transition-transform duration-200 ${errorsExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            {errorsExpanded && (
+              <div className="px-4 pb-3 pt-0 border-t border-red-200">
+                <div className="space-y-1 text-sm text-red-700 mt-2 max-h-48 overflow-y-auto">
+                  {errors.map((error, index) => (
+                    <div key={index}>{error}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Data Table Section */}
@@ -2177,7 +2265,7 @@ export default function Home() {
                         disabled={records.filter((_, index) => !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0).length === 0}
                       >
                         <Download className="h-4 w-4" />
-                        Scarica TXT Valido
+                        Scarica TXT
                       </Button>
                     )}
                     {activeTab === 'invalid' && (
@@ -2187,7 +2275,7 @@ export default function Home() {
                         disabled={records.filter((_, index) => hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0).length === 0}
                       >
                         <Download className="h-4 w-4" />
-                        Scarica TXT Non Valido
+                        Scarica TXT
                       </Button>
                     )}
                   </div>
@@ -2200,7 +2288,7 @@ export default function Home() {
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 z-20">
                         <tr className="bg-teal-600 text-white">
-                          <th className="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider border-r border-teal-500/30 sticky left-0 z-30 bg-teal-600 w-12">
+                          <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wider border-r border-teal-500/30 sticky left-0 z-30 bg-teal-600 w-12">
                             #
                           </th>
                           {ROSS_FIELDS.map(field => (
@@ -2252,7 +2340,7 @@ export default function Home() {
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 z-20">
                         <tr className="bg-red-600 text-white">
-                          <th className="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider border-r border-red-500/30 sticky left-0 z-30 bg-red-600 w-12">
+                          <th className="px-3 py-3 text-center font-semibold text-xs uppercase tracking-wider border-r border-red-500/30 sticky left-0 z-30 bg-red-600 w-12">
                             #
                           </th>
                           {ROSS_FIELDS.map(field => (
@@ -2278,7 +2366,7 @@ export default function Home() {
                               key={recordIndex}
                               className="hover:bg-red-50/50 transition-colors bg-red-50/30"
                             >
-                              <td className="px-3 py-3 font-medium text-slate-600 border-r border-slate-100 sticky left-0 z-10 bg-red-50/30 w-12">
+                              <td className="px-3 py-3 font-medium text-slate-600 border-r border-slate-100 sticky left-0 z-10 bg-[#fffbfb] w-12">
                                 <div className="flex items-center gap-2">
                                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 text-xs font-bold">
                                     {recordIndex + 1}
@@ -2317,7 +2405,7 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold text-slate-700 mb-2">Nessun file caricato</h3>
             <p className="text-slate-500 max-w-md">
-              Carica un file TXT o XML per iniziare la validazione dei dati ROSS 1000
+              Carica un file TXT per iniziare la validazione dei dati ROSS 1000
             </p>
           </div>
         )}
