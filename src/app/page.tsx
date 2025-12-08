@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Upload, Download, FileText, AlertCircle, CheckCircle, RotateCcw, AlertTriangle, Edit, Save, X, Send } from 'lucide-react'
+import { Upload, Download, FileText, AlertCircle, CheckCircle, RotateCcw, AlertTriangle, Edit, X } from 'lucide-react'
 
 // ROSS 1000 Field definitions according to Tracciato Record di integrazione dati (v.4 – 20/10/2022)
 // Note: Codice Italia = '000' secondo le tabelle ufficiali ISTAT
@@ -81,6 +81,8 @@ interface RecordValidationResult {
   hasWarnings: boolean
   hasInfo: boolean
 }
+
+
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null)
@@ -237,47 +239,19 @@ export default function Home() {
     const hasError = fieldErrors[fieldKey] || false
     const isCorrected = correctedFields[fieldKey] || false
 
-    // Calcola larghezza basata sul tipo di campo
-    const getWidth = () => {
-      if (fieldId === 3) return 50; // Cognome - non modificabile, vuoto
-      if (fieldId === 4) return 50; // Nome - non modificabile, vuoto
-      if (fieldId === 14) return 50; // Indirizzo - non modificabile, vuoto
-      if (fieldId === 15) return 50; // Codice tipo documento - non modificabile, vuoto
-      if (fieldId === 16) return 50; // Numero documento - non modificabile, vuoto
-      if (fieldId === 17) return 50; // Luogo rilascio doc - non modificabile, vuoto
-      if (fieldId === 1) return 120; // Tipo Alloggiato - aumentato per leggibilità
-      if (fieldId === 5) return 60;  // Sesso - aumentato per leggibilità
-      if (fieldId === 19 || fieldId === 20) return 140; // Tipo Turismo e Mezzo Trasporto - aumentati
-      if (fieldId === 24) return 50; // Tassa Soggiorno - aumentato per leggibilità
-      if (fieldId === 26) return 100; // Modalità - aumentato per leggibilità
-      // Colonne impostate a 100px
-      if (fieldId === 2) return 100; // Data Arrivo - 100px
-      if (fieldId === 6) return 100; // Data Nascita - 100px
-      if (fieldId === 7) return 100; // Codice Comune Nascita - 100px
-      if (fieldId === 9) return 100; // Codice Stato Nascita - 100px
-      if (fieldId === 10) return 100; // Codice Cittadinanza - 100px
-      if (fieldId === 11) return 100; // Codice Comune Residenza - 100px
-      if (fieldId === 13) return 100; // Codice Stato Residenza - 100px
-      if (fieldId === 18) return 100; // Data Partenza - 100px
-      // Per gli altri campi, calcola in base al contenuto con larghezza minima garantita
-      const value = getTrimmedValue(records[recordIndex], `field_${fieldId}`)
-      const contentLength = value.length > 0 ? value.length : 10
-      return Math.max(contentLength * 7, 80) // Aumentato il moltiplicatore e il minimo
-    }
-
-    const width = getWidth()
-
     return (
-      <td key={fieldId} className={`px-2 py-1 border-r border-gray-200 last:border-r-0 ${hasError ? 'bg-[#ffcccc] text-black font-semibold border-2 border-[#ff9999]' : isCorrected && activeTab === 'valid' ? 'bg-[#e6f7f5] text-[#11b3a2] font-semibold border-2 border-[#11b3a2]' : ''}`} style={{ minWidth: width + 'px', width: width + 'px' }}>
+      <td
+        key={fieldId}
+        className={`px-3 py-2 text-sm border-r border-slate-200 whitespace-nowrap ${hasError ? 'bg-red-100 text-red-800' :
+          isCorrected && activeTab === 'valid' ? 'bg-green-50 text-green-700' : ''
+          }`}
+      >
         {isEditing ? (
-          <div className="flex items-center gap-1" style={{ width: width + 'px' }}>
+          <div className="flex items-center gap-1">
             {/* Campi Select */}
             {fieldId === 1 && (
-              <Select
-                value={editingValue}
-                onValueChange={(newValue) => setEditingValue(newValue)}
-              >
-                <SelectTrigger className="h-7 text-xs" style={{ width: (width - 20) + 'px' }}>
+              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+                <SelectTrigger className="h-7 text-xs w-full">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
@@ -290,11 +264,8 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 5 && (
-              <Select
-                value={editingValue}
-                onValueChange={(newValue) => setEditingValue(newValue)}
-              >
-                <SelectTrigger className="h-7 text-xs" style={{ width: (width - 20) + 'px' }}>
+              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+                <SelectTrigger className="h-7 text-xs w-20">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
@@ -304,11 +275,8 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 19 && (
-              <Select
-                value={editingValue}
-                onValueChange={(newValue) => setEditingValue(newValue)}
-              >
-                <SelectTrigger className="h-7 text-xs" style={{ width: (width - 20) + 'px' }}>
+              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+                <SelectTrigger className="h-7 text-xs w-full">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
@@ -321,11 +289,8 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 20 && (
-              <Select
-                value={editingValue}
-                onValueChange={(newValue) => setEditingValue(newValue)}
-              >
-                <SelectTrigger className="h-7 text-xs" style={{ width: (width - 20) + 'px' }}>
+              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+                <SelectTrigger className="h-7 text-xs w-full">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,11 +303,8 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 24 && (
-              <Select
-                value={editingValue}
-                onValueChange={(newValue) => setEditingValue(newValue)}
-              >
-                <SelectTrigger className="h-7 text-xs" style={{ width: (width - 20) + 'px' }}>
+              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+                <SelectTrigger className="h-7 text-xs w-20">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
@@ -352,11 +314,8 @@ export default function Home() {
               </Select>
             )}
             {fieldId === 26 && (
-              <Select
-                value={editingValue}
-                onValueChange={(newValue) => setEditingValue(newValue)}
-              >
-                <SelectTrigger className="h-7 text-xs" style={{ width: (width - 20) + 'px' }}>
+              <Select value={editingValue} onValueChange={(newValue) => setEditingValue(newValue)}>
+                <SelectTrigger className="h-7 text-xs w-28">
                   <SelectValue placeholder="" />
                 </SelectTrigger>
                 <SelectContent>
@@ -372,14 +331,12 @@ export default function Home() {
               <Input
                 value={editingValue}
                 onChange={(e) => setEditingValue(e.target.value)}
-                className="h-7 text-xs"
-                style={{ width: (width - 20) + 'px' }}
+                className="h-7 text-xs w-full"
                 maxLength={field.length}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    e.preventDefault() // Previene il comportamento di default
-                    // Salva con il padding corretto in base al tipo di campo
+                    e.preventDefault()
                     let finalValue = editingValue
                     if (field.type === 'numeric' || [21, 22, 23].includes(field.id)) {
                       finalValue = editingValue.padStart(field.length, ' ').substring(0, field.length)
@@ -387,7 +344,6 @@ export default function Home() {
                       finalValue = editingValue.padEnd(field.length, ' ').substring(0, field.length)
                     }
                     saveInlineEdit(recordIndex, `field_${fieldId}`, finalValue)
-                    // Forza il blur per uscire dal campo di editing
                     e.currentTarget.blur()
                   }
                   if (e.key === 'Escape') {
@@ -396,7 +352,6 @@ export default function Home() {
                   }
                 }}
                 onBlur={() => {
-                  // Salva immediatamente quando si clicca fuori, con il padding corretto
                   let finalValue = editingValue
                   if (field.type === 'numeric' || [21, 22, 23].includes(field.id)) {
                     finalValue = editingValue.padStart(field.length, ' ').substring(0, field.length)
@@ -418,29 +373,19 @@ export default function Home() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between group" style={{ width: width + 'px' }}>
+          <div
+            className="flex items-center justify-between gap-2 group cursor-pointer"
+            onClick={() => ![3, 4, 14, 15, 16, 17].includes(fieldId) && startInlineEdit(recordIndex, `field_${fieldId}`)}
+          >
             <span
-              className={`text-xs ${hasError ? 'text-white font-bold' : ''}`}
+              className="text-sm truncate"
               title={getDisplayValue(records[recordIndex], `field_${fieldId}`)}
-              style={{
-                maxWidth: (width - 25) + 'px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                display: 'inline-block'
-              }}
             >
               {getDisplayValue(records[recordIndex], `field_${fieldId}`) || '-'}
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => startInlineEdit(recordIndex, `field_${fieldId}`)}
-              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-              style={{ display: [3, 4, 14, 15, 16, 17].includes(fieldId) ? 'none' : 'flex' }}
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
+            {![3, 4, 14, 15, 16, 17].includes(fieldId) && (
+              <Edit className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
+            )}
           </div>
         )}
       </td>
@@ -2088,48 +2033,105 @@ export default function Home() {
   )
 
   return (
-    <>
-      <div className="container mx-auto p-6">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2 text-black">DATI ISTAT - ROSS1000</h1>
-        </div>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Carica File (TXT/XML)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-4">
-              <div className="w-1/3">
-                <Input
-                  id="file-upload"
-                  type="file"
-                  accept=".txt,.xml"
-                  onChange={handleFileUpload}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                {(file || records.length > 0) && (
-                  <Button
-                    variant="outline"
-                    onClick={resetAll}
-                    className="flex items-center gap-2"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    Reset
-                  </Button>
-                )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div className="max-w-[1800px] mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo e Titolo */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md">
+                  R
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-slate-800">ROSS 1000</h1>
+                  <p className="text-xs text-slate-500">Validazione File TXT/XML</p>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
+            {/* Azioni Header */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetAll}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 border-slate-300"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-[1800px] mx-auto px-6 py-8">
+        {/* Upload Section */}
+        <div className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Upload Card - Compact */}
+            <div className="bg-white rounded-xl border-2 border-dashed border-slate-300 hover:border-teal-400 transition-all duration-300 px-4 py-3 relative group cursor-pointer hover:shadow-md">
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".txt,.xml"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="flex items-center gap-3 pointer-events-none">
+                <div className="w-10 h-10 bg-gradient-to-br from-teal-100 to-teal-50 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <Upload className="h-5 w-5 text-teal-600" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-slate-800">Carica File</h3>
+                  {file ? (
+                    <div className="flex items-center gap-1 text-teal-600 text-xs font-medium truncate">
+                      <CheckCircle className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{file.name}</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">TXT o XML</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Card - Record Totali */}
+            <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-slate-800">{records.length}</div>
+                  <div className="text-xs text-slate-500">Record Totali</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Card - Errori */}
+            <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-slate-800">
+                    {Object.values(validationErrors).reduce((total, errors) => total + errors.length, 0)}
+                  </div>
+                  <div className="text-xs text-slate-500">Errori Rilevati</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Errors Alert */}
         {errors.length > 0 && (
-          <Alert className="mb-6" variant="destructive">
+          <Alert className="mb-6 bg-red-50 border-red-200" variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-1">
@@ -2141,337 +2143,221 @@ export default function Home() {
           </Alert>
         )}
 
+        {/* Data Table Section */}
         {records.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>
-                {/* Statistiche e Pulsanti */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative">
-                  {/* Statistiche a sinistra */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="flex items-center gap-2 text-sm">
-                      <FileText className="h-5 w-5" />
-                      Record Totali: {records.length}
-                    </span>
-                    {Object.values(validationErrors).some(errors => errors.length > 0) && (
-                      <Badge variant="destructive" className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        {Object.values(validationErrors).reduce((total, errors) => total + errors.length, 0)} errori da correggere
-                      </Badge>
-                    )}
-                    {/* Statistiche avanzate */}
-                    {Object.values(advancedValidation).some(v => v.hasWarnings) && (
-                      <Badge variant="secondary" className="flex items-center gap-2 bg-yellow-100 text-yellow-800">
-                        <AlertTriangle className="h-4 w-4" />
-                        {Object.values(advancedValidation).reduce((total, v) => total + v.warnings.length, 0)} avvertimenti
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Pulsanti a destra */}
-                  <div className="flex items-center gap-2">
-                    {/* Pulsante Report Validazione */}
-                    {/* Pulsante Report Validazione - DISABILITATO PER GITHUB PAGES
-                    <Button
-                      onClick={generateValidationReport}
-                      variant="outline"
-                      className="flex items-center gap-2 border-black text-black hover:bg-gray-100"
-                      disabled={records.length === 0}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Tabs in Header */}
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'valid' | 'invalid')}>
+              <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+                <div className="flex items-center justify-between">
+                  {/* Tabs on the left */}
+                  <TabsList className="bg-transparent p-0 gap-6 h-auto">
+                    <TabsTrigger
+                      value="valid"
+                      className="px-0 py-0 h-auto bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none text-slate-400 data-[state=active]:text-teal-600 hover:text-slate-600 transition-colors font-medium"
                     >
-                      <FileText className="h-4 w-4" />
-                      Report
-                    </Button>
-                    */}
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Record Validi ({records.filter((_, index) => !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0).length})
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="invalid"
+                      className="px-0 py-0 h-auto bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none text-slate-400 data-[state=active]:text-red-600 hover:text-slate-600 transition-colors font-medium"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Record Non Validi ({records.filter((_, index) => hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0).length})
+                    </TabsTrigger>
+                  </TabsList>
 
-                    {/* Pulsante Download - visibile in base alla scheda attiva */}
+                  {/* Download Button on the right */}
+                  <div className="flex items-center gap-2">
                     {activeTab === 'valid' && (
                       <Button
                         onClick={() => generateTxtFile(true)}
-                        className="flex items-center gap-2"
-                        style={{ backgroundColor: '#11b3a2' }}
+                        className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white shadow-sm hover:shadow-md transition-all"
                         disabled={records.filter((_, index) => !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0).length === 0}
                       >
                         <Download className="h-4 w-4" />
-                        Download
+                        Scarica TXT Valido
                       </Button>
                     )}
                     {activeTab === 'invalid' && (
                       <Button
                         onClick={() => generateTxtFile(false)}
-                        className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md transition-all"
                         disabled={records.filter((_, index) => hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0).length === 0}
                       >
                         <Download className="h-4 w-4" />
-                        Download
+                        Scarica TXT Non Valido
                       </Button>
                     )}
                   </div>
+                </div>
+              </div>
 
-                  {/* Centro assoluto - Pulsanti Genera XML e Invia XML allineati al centro dell'interfaccia */}
-                  <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex gap-2">
-                    {activeTab === 'valid' && (
-                      <>
-                        {/* XML Features DISABILITATE PER GITHUB PAGES
-                        <Button
-                          onClick={generateXMLFile}
-                          variant="outline"
-                          className="flex items-center gap-2 border-blue-500 text-blue-700 hover:bg-blue-50"
-                          disabled={records.filter((_, index) => !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0).length === 0}
-                        >
-                          <Download className="h-4 w-4" />
-                          Genera XML
-                        </Button>
+              <TabsContent value="valid" className="mt-0 p-0">
+                <div className="overflow-x-auto -mt-px">
+                  <div className="overflow-y-auto" style={{ maxHeight: '65vh' }}>
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 z-20">
+                        <tr className="bg-teal-600 text-white">
+                          <th className="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider border-r border-teal-500/30 sticky left-0 z-30 bg-teal-600 w-12">
+                            #
+                          </th>
+                          {ROSS_FIELDS.map(field => (
+                            <th
+                              key={field.id}
+                              className="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider border-r border-teal-500/30 whitespace-nowrap"
+                            >
+                              {field.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {records.map((_, recordIndex) => {
+                          const hasMissingRequired = hasMissingRequiredFields(recordIndex)
+                          const hasErrors = (validationErrors[recordIndex] || []).length > 0
+                          const advancedResult = advancedValidation[recordIndex]
 
-                        <Button
-                          onClick={() => setShowLogin(true)}
-                          className="flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600"
-                          disabled={!generatedXml}
-                        >
-                          <Send className="h-4 w-4" />
-                          Invia XML
-                        </Button>
-                        */}
-                      </>
-                    )}
+                          if (hasMissingRequired || hasErrors) return null
+
+                          return (
+                            <tr
+                              key={recordIndex}
+                              className="hover:bg-teal-50/50 transition-colors"
+                            >
+                              <td className="px-3 py-3 font-medium text-slate-600 border-r border-slate-100 sticky left-0 z-10 bg-white w-12">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs font-bold">
+                                    {recordIndex + 1}
+                                  </span>
+                                  {advancedResult?.hasWarnings && (
+                                    <div className="w-2 h-2 bg-amber-400 rounded-full" title="Avvertimenti"></div>
+                                  )}
+                                </div>
+                              </td>
+                              {ROSS_FIELDS.map(field => renderFieldCell(recordIndex, field.id))}
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {records.length > 0 && (
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'valid' | 'invalid')}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="valid" className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4" />
-                      Record Corretti ({records.filter((_, index) => !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0).length})
-                    </TabsTrigger>
-                    <TabsTrigger value="invalid" className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      Record Non Validi ({records.filter((_, index) => hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0).length})
-                    </TabsTrigger>
-                  </TabsList>
+              </TabsContent>
 
-                  <TabsContent value="valid" className="space-y-4">
-                    <div className="border rounded-lg overflow-hidden bg-white w-full">
-                      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: '60vh', paddingBottom: '20px' }}>
-                        <table className="w-full text-xs border-collapse">
-                          <thead className="sticky top-0 z-30" style={{ backgroundColor: '#11b3a2' }}>
-                            <tr>
-                              <th className="px-2 py-2 text-left font-medium text-white border-r border-gray-200" style={{ width: '60px' }}>#</th>
-                              {ROSS_FIELDS.map(field => {
-                                const getWidth = () => {
-                                  if (field.id === 3) return 50; // Cognome - non modificabile, vuoto
-                                  if (field.id === 4) return 50; // Nome - non modificabile, vuoto
-                                  if (field.id === 14) return 50; // Indirizzo - non modificabile, vuoto
-                                  if (field.id === 15) return 50; // Codice tipo documento - non modificabile, vuoto
-                                  if (field.id === 16) return 50; // Numero documento - non modificabile, vuoto
-                                  if (field.id === 17) return 50; // Luogo rilascio doc - non modificabile, vuoto
-                                  if (field.id === 1) return 120; // Tipo Alloggiato - aumentato per leggibilità
-                                  if (field.id === 5) return 60;  // Sesso - aumentato per leggibilità
-                                  if (field.id === 19 || field.id === 20) return 140; // Tipo Turismo e Mezzo Trasporto - aumentati
-                                  if (field.id === 24) return 50; // Tassa Soggiorno - aumentato per leggibilità
-                                  if (field.id === 26) return 100; // Modalità - aumentato per leggibilità
-                                  // Colonne impostate a 100px
-                                  if (field.id === 2) return 100; // Data Arrivo - 100px
-                                  if (field.id === 6) return 100; // Data Nascita - 100px
-                                  if (field.id === 7) return 100; // Codice Comune Nascita - 100px
-                                  if (field.id === 9) return 100; // Codice Stato Nascita - 100px
-                                  if (field.id === 10) return 100; // Codice Cittadinanza - 100px
-                                  if (field.id === 11) return 100; // Codice Comune Residenza - 100px
-                                  if (field.id === 13) return 100; // Codice Stato Residenza - 100px
-                                  if (field.id === 18) return 100; // Data Partenza - 100px
-                                  // Per gli altri campi, larghezza minima garantita
-                                  return Math.max(field.length * 7, 80)
-                                }
-                                const width = getWidth()
-                                return (
-                                  <th key={field.id} className="px-2 py-2 text-left font-medium text-white border-r border-gray-200" style={{ width: width + 'px' }}>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">{field.name}</span>
-                                    </div>
-                                  </th>
-                                )
-                              })}
+              <TabsContent value="invalid" className="mt-0 p-0">
+                <div className="overflow-x-auto -mt-px">
+                  <div className="overflow-y-auto" style={{ maxHeight: '65vh' }}>
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 z-20">
+                        <tr className="bg-red-600 text-white">
+                          <th className="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider border-r border-red-500/30 sticky left-0 z-30 bg-red-600 w-12">
+                            #
+                          </th>
+                          {ROSS_FIELDS.map(field => (
+                            <th
+                              key={field.id}
+                              className="px-3 py-3 text-left font-semibold text-xs uppercase tracking-wider border-r border-red-500/30 whitespace-nowrap"
+                            >
+                              {field.name}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {records.map((_, recordIndex) => {
+                          const hasMissingRequired = hasMissingRequiredFields(recordIndex)
+                          const hasErrors = (validationErrors[recordIndex] || []).length > 0
+                          const advancedResult = advancedValidation[recordIndex]
+
+                          if (!hasMissingRequired && !hasErrors) return null
+
+                          return (
+                            <tr
+                              key={recordIndex}
+                              className="hover:bg-red-50/50 transition-colors bg-red-50/30"
+                            >
+                              <td className="px-3 py-3 font-medium text-slate-600 border-r border-slate-100 sticky left-0 z-10 bg-red-50/30 w-12">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                                    {recordIndex + 1}
+                                  </span>
+                                  {advancedResult?.hasWarnings && (
+                                    <div className="w-2 h-2 bg-amber-400 rounded-full" title="Avvertimenti"></div>
+                                  )}
+                                </div>
+                              </td>
+                              {ROSS_FIELDS.map(field => renderFieldCell(recordIndex, field.id))}
                             </tr>
-                          </thead>
-                          <tbody>
-                            {records.map((_, recordIndex) => {
-                              const hasMissingRequired = hasMissingRequiredFields(recordIndex)
-                              const hasErrors = (validationErrors[recordIndex] || []).length > 0
-                              const advancedResult = advancedValidation[recordIndex]
-
-                              // Mostra solo i record corretti
-                              if (hasMissingRequired || hasErrors) return null
-
-                              return (
-                                <tr
-                                  key={recordIndex}
-                                  className="border-b border-gray-200 hover:bg-green-50"
-                                >
-                                  <td className="px-2 py-1 font-medium border-r border-gray-200 bg-gray-50 sticky left-0 z-10" style={{ width: '60px' }}>
-                                    <div className="flex items-center gap-1">
-                                      <span className="font-bold text-green-600">
-                                        {recordIndex + 1}
-                                      </span>
-                                      {advancedResult?.hasWarnings && (
-                                        <div className="w-2 h-2 bg-yellow-400 rounded-full" title="Avvertimenti presenti"></div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  {ROSS_FIELDS.map(field => renderFieldCell(recordIndex, field.id))}
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="invalid" className="space-y-4">
-                    <div className="border rounded-lg overflow-hidden bg-white w-full">
-                      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: '60vh', paddingBottom: '20px' }}>
-                        <table className="w-full text-xs border-collapse">
-                          <thead className="sticky top-0 z-30" style={{ backgroundColor: '#dc2626' }}>
-                            <tr>
-                              <th className="px-2 py-2 text-left font-medium text-white border-r border-gray-200" style={{ width: '60px' }}>#</th>
-                              {ROSS_FIELDS.map(field => {
-                                const getWidth = () => {
-                                  if (field.id === 3) return 50; // Cognome - non modificabile, vuoto
-                                  if (field.id === 4) return 50; // Nome - non modificabile, vuoto
-                                  if (field.id === 14) return 50; // Indirizzo - non modificabile, vuoto
-                                  if (field.id === 15) return 50; // Codice tipo documento - non modificabile, vuoto
-                                  if (field.id === 16) return 50; // Numero documento - non modificabile, vuoto
-                                  if (field.id === 17) return 50; // Luogo rilascio doc - non modificabile, vuoto
-                                  if (field.id === 1) return 120; // Tipo Alloggiato - aumentato per leggibilità
-                                  if (field.id === 5) return 60;  // Sesso - aumentato per leggibilità
-                                  if (field.id === 19 || field.id === 20) return 140; // Tipo Turismo e Mezzo Trasporto - aumentati
-                                  if (field.id === 24) return 50; // Tassa Soggiorno - aumentato per leggibilità
-                                  if (field.id === 26) return 100; // Modalità - aumentato per leggibilità
-                                  // Colonne impostate a 100px
-                                  if (field.id === 2) return 100; // Data Arrivo - 100px
-                                  if (field.id === 6) return 100; // Data Nascita - 100px
-                                  if (field.id === 7) return 100; // Codice Comune Nascita - 100px
-                                  if (field.id === 9) return 100; // Codice Stato Nascita - 100px
-                                  if (field.id === 10) return 100; // Codice Cittadinanza - 100px
-                                  if (field.id === 11) return 100; // Codice Comune Residenza - 100px
-                                  if (field.id === 13) return 100; // Codice Stato Residenza - 100px
-                                  if (field.id === 18) return 100; // Data Partenza - 100px
-                                  // Per gli altri campi, larghezza minima garantita
-                                  return Math.max(field.length * 7, 80)
-                                }
-                                const width = getWidth()
-                                return (
-                                  <th key={field.id} className="px-2 py-2 text-left font-medium text-white border-r border-gray-200" style={{ width: width + 'px' }}>
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">{field.name}</span>
-                                    </div>
-                                  </th>
-                                )
-                              })}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {records.map((_, recordIndex) => {
-                              const hasMissingRequired = hasMissingRequiredFields(recordIndex)
-                              const hasErrors = (validationErrors[recordIndex] || []).length > 0
-                              const advancedResult = advancedValidation[recordIndex]
-
-                              // Mostra solo i record non validi
-                              if (!hasMissingRequired && !hasErrors) return null
-
-                              return (
-                                <tr
-                                  key={recordIndex}
-                                  className={`border-b border-gray-200 hover:bg-[#ffebeb] ${hasErrors ? 'bg-red-50' : ''}`}
-                                >
-                                  <td className="px-2 py-1 font-medium border-r border-gray-200 bg-gray-50 sticky left-0 z-10" style={{ width: '60px' }}>
-                                    <div className="flex items-center gap-1">
-                                      <span className="font-bold text-red-600">
-                                        {recordIndex + 1}
-                                      </span>
-                                      {advancedResult?.hasWarnings && (
-                                        <div className="w-2 h-2 bg-yellow-400 rounded-full" title="Avvertimenti presenti"></div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  {ROSS_FIELDS.map(field => renderFieldCell(recordIndex, field.id))}
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              )}
-
-              {/* Componente per l'invio ROSS 1000 */}
-              {/* Componente per l'invio ROSS 1000 - DISABILITATO PER GITHUB PAGES
-              {hasValidRecords && generatedXml && isLoggedIn && (
-                <div className="mt-6 pt-6 border-t">
-                  <Ross1000Sender
-                    xmlMovimenti={generatedXml}
-                    onLoginSuccess={() => setShowLogin(false)}
-                  />
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
-              */}
-
-            </CardContent>
-          </Card>
-        )}
-
-        {isProcessing && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Elaborazione file in corso...</p>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
-      </div>
 
-      {/* Popup Modale per il Login */}
+        {/* Loading State */}
+        {isProcessing && (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-12 h-12 border-4 border-teal-200 border-t-teal-500 rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-600 font-medium">Elaborazione file in corso...</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isProcessing && records.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+              <FileText className="h-10 w-10 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-700 mb-2">Nessun file caricato</h3>
+            <p className="text-slate-500 max-w-md">
+              Carica un file TXT o XML per iniziare la validazione dei dati ROSS 1000
+            </p>
+          </div>
+        )}
+      </main>
+
+      {/* Login Modal */}
       {showLogin && (
         <div
-          style={{
-            position: 'fixed',
-            inset: '0',
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 99999
-          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowLogin(false)}
         >
           <div
-            className="bg-white rounded-lg p-6 w-[320px] shadow-xl relative"
+            className="bg-white rounded-2xl p-8 w-[380px] shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Pulsante X per chiudere */}
             <button
               onClick={() => setShowLogin(false)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center pr-6">
-              Accedi per inviare
-            </h3>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mx-auto mb-4">
+                R
+              </div>
+              <h3 className="text-xl font-semibold text-slate-800">
+                Accedi per inviare
+              </h3>
+            </div>
 
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Regione
                 </label>
                 <select
                   value={loginCredentials.regione}
                   onChange={(e) => setLoginCredentials({ ...loginCredentials, regione: e.target.value })}
-                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   required
                 >
                   {regioni.map((regione) => (
@@ -2483,36 +2369,36 @@ export default function Home() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   value={loginCredentials.email}
                   onChange={(e) => setLoginCredentials({ ...loginCredentials, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   placeholder="email@hotel.com"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Password
                 </label>
                 <input
                   type="password"
                   value={loginCredentials.password}
                   onChange={(e) => setLoginCredentials({ ...loginCredentials, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
+                  placeholder="********"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white px-4 py-3 rounded-xl font-medium transition-all shadow-lg shadow-teal-200"
               >
                 Login
               </button>
@@ -2520,6 +2406,6 @@ export default function Home() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
