@@ -1,4 +1,8 @@
-Next.js TypeScript Tailwind CSS
+<!-- Tecnologie usate -->
+![Next.js](https://img.shields.io/badge/Next.js-⚡-black?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-TS-blue?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-Tailwind%20CSS-black?style=for-the-badge&logo=tailwindcss&logoColor=38B2AC)
+
 
 # ROSS 1000 Validator
 
