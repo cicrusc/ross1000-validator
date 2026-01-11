@@ -84,13 +84,24 @@ The application validates records according to ISTAT ROSS 1000 specifications (v
 ```
 src/
 ├── app/
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Main layout
-│   └── page.tsx           # Main validation page
+│   ├── model/                 # Data layer
+│   │   ├── types.ts           # TypeScript interfaces
+│   │   ├── constants.ts       # ROSS 1000 field definitions
+│   │   └── helpers.ts         # Pure helper functions
+│   ├── viewmodel/             # Business logic layer
+│   │   ├── useValidation.ts   # Field and record validation
+│   │   ├── useFileParsing.ts  # TXT/XML file parsing
+│   │   ├── useFileGeneration.ts # File export logic
+│   │   └── useTestData.ts     # Test data generation
+│   ├── globals.css            # Global styles
+│   ├── layout.tsx             # Root layout
+│   └── page.tsx               # Main page (View layer)
 ├── components/
-│   └── ui/                # shadcn/ui components
+│   └── ui/                    # shadcn/ui components
+├── hooks/
+│   └── use-toast.ts           # Toast notifications
 └── lib/
-    └── utils.ts           # Helper functions
+    └── utils.ts               # Utility functions
 ```
 
 ## Deployment
