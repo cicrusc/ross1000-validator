@@ -98,14 +98,15 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
                     return { isValid: false, errorMessage: "Codice Comune Residenza: deve essere numerico" }
                 }
             } else {
-                // Obbligatorio solo se cittadinanza italiana
-                const citizenship = getTrimmedValue(record, 'field_10')
-                const isItalian = citizenship === '000' // Codice ufficiale per Italia
-                if (isItalian) {
-                    return { isValid: false, errorMessage: "Codice Comune Residenza: obbligatorio per cittadini italiani" }
+                // Obbligatorio solo se RESIDENZA in Italia (non cittadinanza!)
+                const statoResidenza = getTrimmedValue(record, 'field_13')
+                const isResidenteItalia = statoResidenza === '100000100' || statoResidenza.startsWith('000')
+                if (isResidenteItalia) {
+                    return { isValid: false, errorMessage: "Codice Comune Residenza: obbligatorio per residenti in Italia" }
                 }
             }
             break
+
 
         case 12: // Sigla Provincia Residenza
             if (value) {
@@ -114,11 +115,11 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
                     return { isValid: false, errorMessage: "Sigla Provincia Residenza: deve essere 2 lettere" }
                 }
             } else {
-                // Obbligatorio solo se cittadinanza italiana
-                const citizenship = getTrimmedValue(record, 'field_10')
-                const isItalian = citizenship === '000' // Codice ufficiale per Italia
-                if (isItalian) {
-                    return { isValid: false, errorMessage: "Sigla Provincia Residenza: obbligatoria per cittadini italiani" }
+                // Obbligatorio solo se RESIDENZA in Italia (non cittadinanza!)
+                const statoResidenza = getTrimmedValue(record, 'field_13')
+                const isResidenteItalia = statoResidenza === '100000100' || statoResidenza.startsWith('000')
+                if (isResidenteItalia) {
+                    return { isValid: false, errorMessage: "Sigla Provincia Residenza: obbligatoria per residenti in Italia" }
                 }
             }
             break
@@ -172,28 +173,21 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
             const tipoAlloggiato = getTrimmedValue(record, 'field_1')
             const requiresAccommodation = ['16', '17', '18'].includes(tipoAlloggiato)
 
-            console.log(`DEBUG ${field.name}: tipoAlloggiato=${tipoAlloggiato}, requiresAccommodation=${requiresAccommodation}, rawValue="${rawValue}", value="${value}"`)
-
             if (requiresAccommodation) {
                 // Per tipi 16, 17, 18: questi campi sono obbligatori e devono essere numerici
                 // Usa il valore raw (con spazi) per controllare se è completamente vuoto
                 if (!rawValue || rawValue.trim() === '') {
-                    console.log(`DEBUG ${field.name}: ERRORE - Campo obbligatorio ma vuoto per tipo ${tipoAlloggiato}`)
                     return { isValid: false, errorMessage: `${field.name}: obbligatorio per tipo alloggiato ${tipoAlloggiato}` }
                 }
                 // Usa il valore trimmato per la validazione numerica
                 if (!/^\d+$/.test(value)) {
-                    console.log(`DEBUG ${field.name}: ERRORE - Valore non numerico: "${value}"`)
                     return { isValid: false, errorMessage: `${field.name}: deve essere numerico` }
                 }
-                console.log(`DEBUG ${field.name}: VALIDO - Valore numerico corretto`)
             } else {
                 // Per tipi 19 e 20: questi campi devono essere vuoti (solo spazi)
                 if (value.trim() !== '') {
-                    console.log(`DEBUG ${field.name}: ERRORE - Dovrebbe essere vuoto per tipo ${tipoAlloggiato} ma contiene: "${value}"`)
                     return { isValid: false, errorMessage: `${field.name}: non deve essere compilato per tipo alloggiato ${tipoAlloggiato}` }
                 }
-                console.log(`DEBUG ${field.name}: VALIDO - Correttamente vuoto per tipo ${tipoAlloggiato}`)
             }
             break
 

@@ -1,26 +1,25 @@
 ﻿'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Upload, Download, FileText, AlertCircle, CheckCircle, RotateCcw, AlertTriangle, Edit, X, Info, ChevronDown } from 'lucide-react'
+import { Upload, Download, FileText, AlertCircle, CheckCircle, RotateCcw, AlertTriangle, Edit, X, Info, ChevronDown, Shield } from 'lucide-react'
 
 // Model imports
 import { RossRecord, RecordValidationResult } from './model/types'
 import { ROSS_FIELDS, TIPOLOGIA_TURISMO, MEZZI_TRASPORTO, TIPO_ALLOGGIATO, regioni } from './model/constants'
-import { getTrimmedValue, getFieldValue, getDisplayValue } from './model/helpers'
+import { getTrimmedValue, getDisplayValue } from './model/helpers'
 
 // ViewModel imports
 import { validateField, validateRecordAdvanced } from './viewmodel/useValidation'
 import { parseXmlFile, parseTxtFile } from './viewmodel/useFileParsing'
 import { generateTxtFile, generateValidationReport, generateXMLFile } from './viewmodel/useFileGeneration'
 import { generateTestData } from './viewmodel/useTestData'
+import { validateROSS1000File, ROSS1000Validator } from '../validation/ross1000-validator'
+import type { ValidationResult } from '../validation/ross1000-validator'
 
 
 
@@ -32,7 +31,6 @@ export default function Home() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({})
   const [correctedFields, setCorrectedFields] = useState<{ [key: string]: boolean }>({}) // Traccia i campi corretti
   const [isProcessing, setIsProcessing] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<number | null>(null)
   const [editingField, setEditingField] = useState<{ recordIndex: number, fieldId: string } | null>(null)
   const [editingValue, setEditingValue] = useState<string>('') // Stato locale per l'editing
   const [activeTab, setActiveTab] = useState<'valid' | 'invalid'>('valid') // Scheda attiva
@@ -41,6 +39,8 @@ export default function Home() {
   const [showLogin, setShowLogin] = useState<boolean>(false) // Controlla la visibilità del menu di login
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false) // Controlla se l'utente ha effettuato il login
   const [errorsExpanded, setErrorsExpanded] = useState<boolean>(false) // Controlla espansione lista errori
+  const [showValidationReport, setShowValidationReport] = useState<boolean>(false) // Controlla visibilità report validazione
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null) // Risultato validazione
   const [loginCredentials, setLoginCredentials] = useState({
     email: '',
     password: '',
@@ -61,7 +61,6 @@ export default function Home() {
     setErrorsExpanded(false) // Resetta espansione lista errori
     setLoginCredentials({ email: '', password: '', regione: '' }) // Resetta le credenziali di login
     setActiveTab('valid') // Resetta la scheda attiva a 'valid'
-    setSelectedRecord(null)
     setEditingField(null)
     setEditingValue('')
     const fileInput = document.getElementById('file-upload') as HTMLInputElement
@@ -216,12 +215,9 @@ export default function Home() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    let finalValue = editingValue
-                    if (field.type === 'numeric' || [21, 22, 23].includes(field.id)) {
-                      finalValue = editingValue.padStart(field.length, ' ').substring(0, field.length)
-                    } else {
-                      finalValue = editingValue.padEnd(field.length, ' ').substring(0, field.length)
-                    }
+                    // Tutti i campi: rimuovi spazi e applica padding a destra (valori allineati a sinistra)
+                    const cleanValue = editingValue.replace(/\s/g, '')
+                    const finalValue = cleanValue.padEnd(field.length, ' ').substring(0, field.length)
                     saveInlineEdit(recordIndex, `field_${fieldId}`, finalValue)
                     e.currentTarget.blur()
                   }
@@ -231,12 +227,9 @@ export default function Home() {
                   }
                 }}
                 onBlur={() => {
-                  let finalValue = editingValue
-                  if (field.type === 'numeric' || [21, 22, 23].includes(field.id)) {
-                    finalValue = editingValue.padStart(field.length, ' ').substring(0, field.length)
-                  } else {
-                    finalValue = editingValue.padEnd(field.length, ' ').substring(0, field.length)
-                  }
+                  // Tutti i campi: rimuovi spazi e applica padding a destra (valori allineati a sinistra)
+                  const cleanValue = editingValue.replace(/\s/g, '')
+                  const finalValue = cleanValue.padEnd(field.length, ' ').substring(0, field.length)
                   saveInlineEdit(recordIndex, `field_${fieldId}`, finalValue)
                 }}
               />
@@ -334,16 +327,12 @@ export default function Home() {
       const newRecords = [...prev]
       const field = ROSS_FIELDS.find(f => `field_${f.id}` === fieldId)
       if (field) {
-        let paddedValue: string
+        // Tutti i campi: rimuovi spazi esistenti e applica padding a destra (valori allineati a sinistra)
+        const cleanValue = value.toString().replace(/\s/g, '')
+        let paddedValue = cleanValue.padEnd(field.length, ' ')
 
-        // Per i campi numerici, usa padding a sinistra, per gli altri a destra
-        if (field.type === 'numeric' || [21, 22, 23].includes(field.id)) {
-          // Campi numerici: padding a sinistra con spazi
-          paddedValue = value.toString().padStart(field.length, ' ').substring(0, field.length)
-        } else {
-          // Altri campi: padding a destra con spazi
-          paddedValue = value.toString().padEnd(field.length, ' ').substring(0, field.length)
-        }
+        // Tronca se troppo lungo (sicurezza aggiuntiva)
+        paddedValue = paddedValue.substring(0, field.length)
 
         newRecords[recordIndex] = { ...newRecords[recordIndex], [fieldId]: paddedValue }
 
@@ -543,12 +532,6 @@ export default function Home() {
     })
   }
 
-  const validateRecordInRealTime = (recordIndex: number) => {
-    // Usa la nuova funzione di validazione completa
-    const record = records[recordIndex]
-    validateRecordCompletely(recordIndex, record)
-  }
-
   // Funzione per verificare se un record ha campi obbligatori mancanti
   const hasMissingRequiredFields = (recordIndex: number) => {
     const record = records[recordIndex]
@@ -607,20 +590,47 @@ export default function Home() {
     }
   }
 
-  const validateRecords = () => {
-    // Usa il nuovo sistema di validazione completo
-    return runCompleteCheck()
+  const handleValidateISTAT = async () => {
+    // Genera il contenuto TXT in memoria (senza download)
+    let content = ''
+
+    // IMPORTANTE: Valida TUTTI i record, non solo quelli che l'app considera "validi"
+    // Questo permette di trovare discrepanze tra la validazione dell'app e le specifiche ISTAT
+    if (records.length === 0) {
+      alert('Nessun record da validare')
+      return
+    }
+
+    // Genera contenuto TXT per TUTTI i record
+    for (const record of records) {
+      let recordContent = ''
+
+      for (const field of ROSS_FIELDS) {
+        const value = getTrimmedValue(record, `field_${field.id}`)
+        const cleanValue = value.trim()
+        let paddedValue = cleanValue.padEnd(field.length, ' ')
+        paddedValue = paddedValue.substring(0, field.length)
+        recordContent += paddedValue
+      }
+
+      content += recordContent
+      content += '\r\n'
+    }
+
+    // Valida con il validatore ISTAT
+    const validator = new ROSS1000Validator()
+    const result = validator.validateFile(content)
+
+    // Salva risultato e mostra dialog
+    setValidationResult(result)
+    setShowValidationReport(true)
   }
 
   const handleDownload = async () => {
-    console.log('🎯 Download button clicked')
-    const validationResult = validateRecords()
-    console.log('✅ Validation result:', validationResult)
+    const validationResult = runCompleteCheck()
     if (validationResult) {
-      console.log('🚀 Starting TXT file generation')
       await generateTxtFile(true, records, hasMissingRequiredFields, validationErrors, file)
     } else {
-      console.log('❌ Validation failed, not generating file')
       alert('La validazione dei record è fallita. Correggi gli errori prima di scaricare.')
     }
   }
@@ -797,7 +807,7 @@ export default function Home() {
                     </TabsTrigger>
                   </TabsList>
 
-                  {/* Download Button on the right */}
+                  {/* Download and Validation Buttons on the right */}
                   <div className="flex items-center gap-2">
                     {activeTab === 'valid' && (
                       <Button
@@ -819,6 +829,16 @@ export default function Home() {
                         Scarica TXT
                       </Button>
                     )}
+                    {/* Pulsante Validazione ISTAT */}
+                    <Button
+                      onClick={handleValidateISTAT}
+                      className="bg-slate-600 hover:bg-slate-700"
+                      disabled={records.length === 0}
+                      title="Valida conformità ISTAT ROSS 1000 v.4 - Analizza TUTTI i record"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Valida ISTAT
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1032,6 +1052,97 @@ export default function Home() {
                 Login
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Validation Report Dialog */}
+      {showValidationReport && validationResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className={`px-6 py-4 border-b flex items-center justify-between ${validationResult.valid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              }`}>
+              <div className="flex items-center gap-3">
+                {validationResult.valid ? (
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-6 w-6 text-red-600" />
+                )}
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-800">
+                    Report Validazione ISTAT v.4
+                  </h2>
+                  <p className={`text-sm ${validationResult.valid ? 'text-green-700' : 'text-red-700'}`}>
+                    {validationResult.valid ? '✅ Conforme' : '❌ Non conforme'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowValidationReport(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <div className="text-sm text-slate-600 mb-1">Record Totali</div>
+                  <div className="text-2xl font-bold">{validationResult.totalRecords}</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="text-sm text-green-700 mb-1">Validi</div>
+                  <div className="text-2xl font-bold text-green-700">{validationResult.validRecords}</div>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4">
+                  <div className="text-sm text-red-700 mb-1">Non Validi</div>
+                  <div className="text-2xl font-bold text-red-700">{validationResult.invalidRecords}</div>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="text-sm text-purple-700 mb-1">Errori</div>
+                  <div className="text-2xl font-bold text-purple-700">{validationResult.errors.length}</div>
+                </div>
+              </div>
+
+              {/* Errors */}
+              {validationResult.errors.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-red-900 mb-3">Errori ({validationResult.errors.length})</h3>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {validationResult.errors.map((error, index) => (
+                      <div key={index} className="bg-red-50 rounded-lg p-3 border-l-4 border-red-500">
+                        <div className="text-xs font-semibold text-red-800 mb-1">
+                          {error.severity} - Record {error.recordNumber}
+                          {error.fieldNumber && ` - Campo ${error.fieldNumber}`}
+                        </div>
+                        <div className="text-sm text-slate-700">{error.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Success */}
+              {validationResult.valid && validationResult.errors.length === 0 && (
+                <div className="bg-green-50 rounded-lg p-6 text-center">
+                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-green-900 mb-2">File Conforme!</h3>
+                  <p className="text-green-700">Tutti i record rispettano le specifiche ISTAT ROSS 1000 v.4</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t flex justify-between">
+              <div className="text-sm text-slate-600">ISTAT ROSS 1000 v.4 (20/10/2022)</div>
+              <Button onClick={() => setShowValidationReport(false)} className="bg-slate-600 hover:bg-slate-700">
+                Chiudi
+              </Button>
+            </div>
           </div>
         </div>
       )}

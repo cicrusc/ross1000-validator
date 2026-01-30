@@ -9,24 +9,18 @@ export const generateTxtFile = async (
     validationErrors: { [key: number]: string[] },
     file: File | null
 ) => {
-    console.log('🔄 Generating TXT file, filterValid:', filterValid)
     let content = ''
 
     // Filtra i record in base al parametro
     const recordsToInclude = records.filter((_, index) => {
         if (filterValid) {
             // Includi solo i record validi
-            const isValid = !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0
-            console.log(`Record ${index + 1}: hasMissing=${hasMissingRequiredFields(index)}, errorsCount=${(validationErrors[index] || []).length}, isValid=${isValid}`)
-            return isValid
+            return !hasMissingRequiredFields(index) && (validationErrors[index] || []).length === 0
         } else {
             // Includi solo i record NON validi
-            const isInvalid = hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0
-            return isInvalid
+            return hasMissingRequiredFields(index) || (validationErrors[index] || []).length > 0
         }
     })
-
-    console.log(`Found ${recordsToInclude.length} records to include`)
 
     if (recordsToInclude.length === 0) {
         alert('Nessun record da scaricare con i criteri selezionati')
@@ -35,21 +29,23 @@ export const generateTxtFile = async (
 
     // Genera il contenuto del file
     for (const record of recordsToInclude) {
+        let recordContent = ''
+
         for (const field of ROSS_FIELDS) {
             const value = getTrimmedValue(record, `field_${field.id}`)
-            let paddedValue = ''
 
-            // Applica il padding corretto in base al tipo di campo
-            if (field.type === 'numeric' || [21, 22, 23].includes(field.id)) {
-                // Campi numerici: padding a sinistra con spazi
-                paddedValue = value.padStart(field.length, ' ').substring(0, field.length)
-            } else {
-                // Altri campi: padding a destra con spazi
-                paddedValue = value.padEnd(field.length, ' ').substring(0, field.length)
-            }
+            // Applica il padding corretto: tutti i campi usano padding a destra (valori allineati a sinistra)
+            // Usa trim() per rimuovere solo spazi iniziali/finali, preservando spazi interni (es: "Non Specificato")
+            const cleanValue = value.trim()
+            let paddedValue = cleanValue.padEnd(field.length, ' ')
 
-            content += paddedValue
+            // Tronca se troppo lungo (sicurezza aggiuntiva)
+            paddedValue = paddedValue.substring(0, field.length)
+
+            recordContent += paddedValue
         }
+
+        content += recordContent
         content += '\r\n' // Terminatore di riga Windows
     }
 
@@ -58,8 +54,6 @@ export const generateTxtFile = async (
         const originalName = file ? file.name.replace(/\.(txt|xml)$/i, '') : 'ROSS1000'
         const suffix = filterValid ? '_VALIDI' : '_ERRORI'
         const fileName = `${originalName}${suffix}.txt`
-
-        console.log('✅ Generating client-side Blob for:', fileName)
 
         // Crea il Blob direttamente nel browser
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
@@ -73,8 +67,6 @@ export const generateTxtFile = async (
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-
-        console.log('✅ Download initiated')
 
     } catch (error) {
         console.error('❌ Download failed:', error)
@@ -233,7 +225,6 @@ export const generateXMLFile = async (
     file: File | null,
     setGeneratedXml: (xml: string) => void
 ) => {
-    console.log('🔄 Generating XML file')
     if (records.length === 0) {
         alert('Nessun record da elaborare')
         return
@@ -441,9 +432,6 @@ export const generateXMLFile = async (
     const xmlFileName = `${codiceStruttura}_movimenti_${new Date().toISOString().split('T')[0]}.xml`
 
     try {
-        console.log('📤 Sending XML download request to server:', xmlFileName)
-        console.log('📊 XML Content size:', xml.length, 'characters')
-
         // Verifica se il contenuto è troppo grande per JSON (limite circa 50MB per alcuni browser)
         const MAX_JSON_SIZE = 25 * 1024 * 1024 // 25MB limite sicuro
 
@@ -464,8 +452,6 @@ export const generateXMLFile = async (
                 const errorData = await response.json()
                 throw new Error(errorData.error || `HTTP ${response.status}`)
             }
-
-            console.log('✅ Large XML content download request successful')
 
             // Il browser gestirà automaticamente il download con gli header corretti
             const blob = await response.blob()
@@ -495,8 +481,6 @@ export const generateXMLFile = async (
                 const errorData = await response.json()
                 throw new Error(errorData.error || `HTTP ${response.status}`)
             }
-
-            console.log('✅ XML download request successful')
 
             // Il browser gestirà automaticamente il download con gli header corretti
             const blob = await response.blob()
