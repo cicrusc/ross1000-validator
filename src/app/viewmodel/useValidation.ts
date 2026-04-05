@@ -23,9 +23,17 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
         return { isValid: false, errorMessage: `${field.name}: lunghezza errata (attesa ${field.length}, trovata ${rawValue.length})` }
     }
 
+    // Per modalità 3 (Eliminazione), solo i campi 1, 2, 25 e 26 sono rilevanti
+    // Il tracciato dice: "gli unici dati utilizzati sono i campi 1, 2 e 25"
+    const modalitaCheck = getTrimmedValue(record, 'field_26')
+    if (modalitaCheck === '3' && ![1, 2, 25, 26].includes(fieldId)) {
+        // Per eliminazione, tutti gli altri campi sono irrilevanti
+        return { isValid: true }
+    }
+
     // Controllo campi obbligatori: non devono essere vuoti (dopo il trim)
-    // Per i campi 11, 12, 21, 22, 23, la validazione viene gestita nella logica specifica
-    if ((field.required === true || field.required === 'conditional') && !value && ![11, 12, 21, 22, 23].includes(fieldId)) {
+    // Per i campi 11, 12, 18, 21, 22, 23, la validazione viene gestita nella logica specifica
+    if ((field.required === true || field.required === 'conditional') && !value && ![11, 12, 18, 21, 22, 23].includes(fieldId)) {
         return { isValid: false, errorMessage: `${field.name}: obbligatorio` }
     }
 
@@ -133,16 +141,23 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
             }
             break
 
+        case 14: // Documento Identificativo
+            // Campo opzionale secondo specifiche ISTAT ROSS 1000 v.4
+            // Se compilato, la lunghezza è già verificata dal controllo generale
+            // Nessuna validazione aggiuntiva richiesta
+            break
+
         case 18: // Data Partenza
             const modalita = getTrimmedValue(record, 'field_26')
-            if (modalita === '2') { // Variazione
-                if (!value) {
-                    return { isValid: false, errorMessage: "Data Partenza: obbligatoria per modalità Variazione" }
-                }
+            // Obbligatoria SOLO per modalità 2 (Variazione)
+            if (modalita === '2' && !value) {
+                return { isValid: false, errorMessage: "Data Partenza: obbligatoria per modalità Variazione" }
+            }
+            // Validazione formato: SEMPRE se il campo è compilato (qualsiasi modalità)
+            if (value) {
                 if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
                     return { isValid: false, errorMessage: "Data Partenza: formato non valido (gg/mm/aaaa)" }
                 }
-                // Validazione data
                 const departureMatch = value.match(dateRegex)
                 if (departureMatch) {
                     const day = parseInt(departureMatch[1])
@@ -171,7 +186,13 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
         case 22: // Camere Disponibili
         case 23: // Letti Disponibili
             const tipoAlloggiato = getTrimmedValue(record, 'field_1')
+            const modalitaAccommodation = getTrimmedValue(record, 'field_26')
             const requiresAccommodation = ['16', '17', '18'].includes(tipoAlloggiato)
+
+            // Per modalità 3 (Eliminazione), questi campi non sono rilevanti
+            if (modalitaAccommodation === '3') {
+                break
+            }
 
             if (requiresAccommodation) {
                 // Per tipi 16, 17, 18: questi campi sono obbligatori e devono essere numerici
@@ -198,6 +219,9 @@ export const validateField = (record: RossRecord, fieldId: number): { isValid: b
             break
 
         case 25: // Codice Identificativo Posizione
+            if (!value) {
+                return { isValid: false, errorMessage: "Codice Identificativo Posizione: obbligatorio" }
+            }
             break
 
         case 26: // Modalità
@@ -245,17 +269,15 @@ export const validateRecordAdvanced = (record: RossRecord, recordIndex: number):
 
     // 1. Validazione contestuale basata sul tipo di alloggiato
     if (['16', '17', '18'].includes(tipoAlloggiato)) {
-        // Per capi gruppo/famiglia e ospiti singoli, verificare la coerenza dei dati
-        if (tipoAlloggiato === '17' || tipoAlloggiato === '18') {
-            const codiceIdentificativo = getTrimmedValue(record, 'field_25')
-            if (!codiceIdentificativo) {
-                result.errors.push({
-                    isValid: false,
-                    level: 'error',
-                    message: `Codice identificativo posizione obbligatorio per ${tipoAlloggiato === '17' ? 'Capo Famiglia' : 'Capo Gruppo'}`,
-                    fieldId: 25
-                })
-            }
+        // Per tutti i tipi 16/17/18, verificare codice identificativo
+        const codiceIdentificativo = getTrimmedValue(record, 'field_25')
+        if (!codiceIdentificativo) {
+            result.errors.push({
+                isValid: false,
+                level: 'error',
+                message: `Codice identificativo posizione obbligatorio per ${tipoAlloggiato === '16' ? 'Ospite Singolo' : tipoAlloggiato === '17' ? 'Capo Famiglia' : 'Capo Gruppo'}`,
+                fieldId: 25
+            })
         }
     }
 
@@ -306,14 +328,15 @@ export const validateRecordAdvanced = (record: RossRecord, recordIndex: number):
     // 4. Validazione logica camere e letti
     // Regola ISTAT: Il numero delle camere e dei letti deve essere specificato 
     // solo in corrispondenza del Tipo Alloggiato 16, 17 o 18
-    if (['16', '17', '18'].includes(tipoAlloggiato)) {
+    // Per modalità 3 (Eliminazione) non validare camere/letti
+    if (['16', '17', '18'].includes(tipoAlloggiato) && modalita !== '3') {
         const camereOcc = parseInt(camereOccupate) || 0
         const camereDisp = parseInt(camereDisponibili) || 0
         const lettiDisp = parseInt(lettiDisponibili) || 0
         const tipoLabel = tipoAlloggiato === '16' ? 'Ospite Singolo' : tipoAlloggiato === '17' ? 'Capo Famiglia' : 'Capo Gruppo'
 
         // Errore: camere occupate obbligatorie per tipi 16, 17, 18
-        if (!camereOccupate || camereOcc === 0) {
+        if (!camereOccupate) {
             result.errors.push({
                 isValid: false,
                 level: 'error',
@@ -323,7 +346,7 @@ export const validateRecordAdvanced = (record: RossRecord, recordIndex: number):
         }
 
         // Errore: camere disponibili obbligatorie per tipi 16, 17, 18
-        if (!camereDisponibili || camereDisp === 0) {
+        if (!camereDisponibili) {
             result.errors.push({
                 isValid: false,
                 level: 'error',
@@ -333,7 +356,7 @@ export const validateRecordAdvanced = (record: RossRecord, recordIndex: number):
         }
 
         // Errore: letti disponibili obbligatori per tipi 16, 17, 18
-        if (!lettiDisponibili || lettiDisp === 0) {
+        if (!lettiDisponibili) {
             result.errors.push({
                 isValid: false,
                 level: 'error',
@@ -436,7 +459,7 @@ export const validateRecordAdvanced = (record: RossRecord, recordIndex: number):
     const siglaProvinciaNascita = getTrimmedValue(record, 'field_8')
     const codiceStatoNascita = getTrimmedValue(record, 'field_9')
 
-    if (cittadinanza === '000' && codiceStatoNascita === '000') {
+    if ((cittadinanza === '100000100' || cittadinanza.startsWith('000')) && (codiceStatoNascita === '100000100' || codiceStatoNascita.startsWith('000'))) {
         if (!codiceComuneNascita) {
             result.errors.push({
                 isValid: false,

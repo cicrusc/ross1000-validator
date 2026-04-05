@@ -34,10 +34,16 @@ export const generateTxtFile = async (
         for (const field of ROSS_FIELDS) {
             const value = getTrimmedValue(record, `field_${field.id}`)
 
-            // Applica il padding corretto: tutti i campi usano padding a destra (valori allineati a sinistra)
-            // Usa trim() per rimuovere solo spazi iniziali/finali, preservando spazi interni (es: "Non Specificato")
+            // Applica il padding corretto in base al tipo di campo
+            // Campi numerici: allineamento a destra (padStart)
+            // Campi alfanumerici: allineamento a sinistra (padEnd)
             const cleanValue = value.trim()
-            let paddedValue = cleanValue.padEnd(field.length, ' ')
+            let paddedValue: string
+            if (field.type === 'numeric') {
+                paddedValue = cleanValue.padStart(field.length, ' ')
+            } else {
+                paddedValue = cleanValue.padEnd(field.length, ' ')
+            }
 
             // Tronca se troppo lungo (sicurezza aggiuntiva)
             paddedValue = paddedValue.substring(0, field.length)

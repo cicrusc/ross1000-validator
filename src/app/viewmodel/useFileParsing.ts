@@ -73,8 +73,8 @@ export const parseXmlFile = async (
                 const dataNascita = arrivo.querySelector("datanascita")?.textContent || ""
                 const statoNascita = arrivo.querySelector("statonascita")?.textContent || ""
                 const comuneNascita = arrivo.querySelector("comunenascita")?.textContent || ""
-                const tipoTurismo = arrivo.querySelector("tipoturismo")?.textContent || "NON SPECIFICATO"
-                const mezzoTrasporto = arrivo.querySelector("mezzotrasporto")?.textContent || "NON SPECIFICATO"
+                const tipoTurismo = arrivo.querySelector("tipoturismo")?.textContent || "Non Specificato"
+                const mezzoTrasporto = arrivo.querySelector("mezzotrasporto")?.textContent || "Non Specificato"
 
                 // Converti data di nascita da YYYYMMDD a DD/MM/YYYY
                 const formattedDataNascita = dataNascita.length === 8 ?
@@ -102,9 +102,9 @@ export const parseXmlFile = async (
                 record.field_18 = ''.padEnd(10, ' ') // Data partenza - da calcolare
                 record.field_19 = tipoTurismo.padEnd(30, ' ')
                 record.field_20 = mezzoTrasporto.padEnd(30, ' ')
-                record.field_21 = camereOccupate.padEnd(3, ' ')
-                record.field_22 = camereDisponibili.padEnd(3, ' ')
-                record.field_23 = lettiDisponibili.padEnd(4, ' ')
+                record.field_21 = camereOccupate.padStart(3, ' ')
+                record.field_22 = camereDisponibili.padStart(3, ' ')
+                record.field_23 = lettiDisponibili.padStart(4, ' ')
                 record.field_24 = ''.padEnd(1, ' ') // Tassa soggiorno
                 record.field_25 = idswh.padEnd(10, ' ') // Usa IDSWH come identificativo
                 record.field_26 = '1'.padEnd(1, ' ') // Modalità: Nuovo
@@ -149,11 +149,11 @@ export const parseXmlFile = async (
                     record.field_18 = partenzaPrenotazione.length === 8 ?
                         `${partenzaPrenotazione.substring(6, 8)}/${partenzaPrenotazione.substring(4, 6)}/${partenzaPrenotazione.substring(0, 4)}`.padEnd(10, ' ') :
                         ''.padEnd(10, ' ')
-                    record.field_19 = 'NON SPECIFICATO'.padEnd(30, ' ')
-                    record.field_20 = 'NON SPECIFICATO'.padEnd(30, ' ')
-                    record.field_21 = '1'.padEnd(3, ' ')
-                    record.field_22 = camereDisponibili.padEnd(3, ' ')
-                    record.field_23 = lettiDisponibili.padEnd(4, ' ')
+                    record.field_19 = 'Non Specificato'.padEnd(30, ' ')
+                    record.field_20 = 'Non Specificato'.padEnd(30, ' ')
+                    record.field_21 = '1'.padStart(3, ' ')
+                    record.field_22 = camereDisponibili.padStart(3, ' ')
+                    record.field_23 = lettiDisponibili.padStart(4, ' ')
                     record.field_24 = ''.padEnd(1, ' ')
                     record.field_25 = prenotazione.querySelector("idswh")?.textContent?.padEnd(10, ' ') || `PREN${recordIdCounter}`.padEnd(10, ' ')
                     record.field_26 = '1'.padEnd(1, ' ')

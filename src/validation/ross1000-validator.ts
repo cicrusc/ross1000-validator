@@ -129,8 +129,8 @@ export class ROSS1000Validator {
                 severity: 'CRITICAL'
             })
             isValid = false
-            // Non procedere con ulteriori test se la lunghezza è sbagliata
-            return false
+            // CONTINUA comunque con la validazione per identificare tutti gli errori
+            // Non return false qui - vogliamo vedere anche gli errori di campo
         }
 
         // Estrai tutti i campi
@@ -193,6 +193,12 @@ export class ROSS1000Validator {
 
         const trimmedValue = value.trim()
         const tipoAlloggiato = allFields[0].trim() // Campo 1
+        const modalitaValue = allFields[25]?.trim() // Campo 26
+
+        // Per modalità 3 (Eliminazione), solo i campi 1, 2, 25 e 26 sono rilevanti
+        if (modalitaValue === '3' && ![1, 2, 25, 26].includes(fieldDef.order)) {
+            return isValid
+        }
 
         // Test 3.2: Campi obbligatori
         if (fieldDef.required === 'SI' && !trimmedValue) {
@@ -317,7 +323,13 @@ export class ROSS1000Validator {
             case 22: // Camere disponibili
             case 23: // Letti disponibili
                 const tipoAlloggiato = allFields[0].trim()
+                const modalitaField = allFields[25].trim() // Campo 26
                 const requiresAccommodation = ['16', '17', '18'].includes(tipoAlloggiato)
+
+                // Per modalità 3 (Eliminazione), questi campi non sono rilevanti
+                if (modalitaField === '3') {
+                    break
+                }
 
                 if (requiresAccommodation) {
                     if (!trimmedValue) {
@@ -403,17 +415,29 @@ export class ROSS1000Validator {
         const siglaProvinciaResidenza = fields[11].trim() // Campo 12
         const tipoAlloggiato = fields[0].trim() // Campo 1
 
-        // Test 5.1: Modalità 2 (Variazione) richiede Data di Partenza
-        if (modalita === '2' && !dataPartenza) {
-            this.errors.push({
-                recordNumber,
-                fieldNumber: 18,
-                fieldName: 'Data di partenza',
-                errorType: 'REQUIRED_FOR_MODALITA_2',
-                message: 'Data di partenza obbligatoria per Modalità 2 (Variazione)',
-                severity: 'ERROR'
-            })
-            isValid = false
+        // Test 5.1: Modalità 2 (Variazione) richiede Data di Partenza valida
+        if (modalita === '2') {
+            if (!dataPartenza) {
+                this.errors.push({
+                    recordNumber,
+                    fieldNumber: 18,
+                    fieldName: 'Data di partenza',
+                    errorType: 'REQUIRED_FOR_MODALITA_2',
+                    message: 'Data di partenza obbligatoria per Modalità 2 (Variazione)',
+                    severity: 'ERROR'
+                })
+                isValid = false
+            } else if (!this.isValidDate(dataPartenza)) {
+                this.errors.push({
+                    recordNumber,
+                    fieldNumber: 18,
+                    fieldName: 'Data di partenza',
+                    errorType: 'INVALID_DATE_FORMAT',
+                    message: 'Data di partenza non valida. Formato richiesto: gg/mm/aaaa',
+                    severity: 'ERROR'
+                })
+                isValid = false
+            }
         }
 
         // Test 5.2: Residenza in Italia richiede comune e provincia
@@ -473,6 +497,57 @@ export class ROSS1000Validator {
                     fieldName: 'Data di partenza',
                     errorType: 'INVALID_DATE_RANGE',
                     message: 'Data di partenza deve essere successiva alla data di arrivo',
+                    severity: 'ERROR'
+                })
+                isValid = false
+            }
+        }
+
+        // Test 5.5: Comune e provincia nascita obbligatori per cittadini italiani nati in Italia
+        const cittadinanza = fields[9].trim() // Campo 10
+        const statoNascita = fields[8].trim() // Campo 9
+        const comuneNascita = fields[6].trim() // Campo 7
+        const provinciaNascita = fields[7].trim() // Campo 8
+
+        if (cittadinanza === '100000100' && statoNascita === '100000100') {
+            if (!comuneNascita) {
+                this.errors.push({
+                    recordNumber,
+                    fieldNumber: 7,
+                    fieldName: 'Codice comune nascita',
+                    errorType: 'REQUIRED_FOR_ITALIAN_BIRTH',
+                    message: 'Codice comune nascita obbligatorio per cittadini italiani nati in Italia',
+                    severity: 'ERROR'
+                })
+                isValid = false
+            }
+
+            if (!provinciaNascita) {
+                this.errors.push({
+                    recordNumber,
+                    fieldNumber: 8,
+                    fieldName: 'Sigla provincia nascita',
+                    errorType: 'REQUIRED_FOR_ITALIAN_BIRTH',
+                    message: 'Sigla provincia nascita obbligatoria per cittadini italiani nati in Italia',
+                    severity: 'ERROR'
+                })
+                isValid = false
+            }
+        }
+
+        // Test 5.6: Data nascita deve essere anteriore a data arrivo
+        const dataNascita = fields[5].trim() // Campo 6
+        if (dataArrivo && dataNascita) {
+            const nascita = this.parseDate(dataNascita)
+            const arrivo = this.parseDate(dataArrivo)
+
+            if (nascita && arrivo && nascita > arrivo) {
+                this.errors.push({
+                    recordNumber,
+                    fieldNumber: 6,
+                    fieldName: 'Data di nascita',
+                    errorType: 'INVALID_DATE_COHERENCE',
+                    message: 'Data di nascita posteriore alla data di arrivo',
                     severity: 'ERROR'
                 })
                 isValid = false

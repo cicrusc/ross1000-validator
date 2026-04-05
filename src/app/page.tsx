@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
@@ -102,7 +102,7 @@ export default function Home() {
     return (
       <td
         key={fieldId}
-        className={`px-3 py-2 text-sm border-r border-slate-200 whitespace-nowrap ${hasError ? 'bg-red-100 text-red-800' :
+        className={`px-3 py-2 text-sm tabular-nums border-r border-slate-200 whitespace-nowrap ${hasError ? 'bg-red-100 text-red-800' :
           isCorrected && activeTab === 'valid' ? 'bg-green-50 text-green-700' : ''
           }`}
       >
@@ -210,14 +210,20 @@ export default function Home() {
                 value={editingValue}
                 onChange={(e) => setEditingValue(e.target.value)}
                 className="h-7 text-xs w-full"
+                style={{ minWidth: [2, 6, 18].includes(fieldId) ? '120px' : undefined }}
                 maxLength={field.length}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    // Tutti i campi: rimuovi spazi e applica padding a destra (valori allineati a sinistra)
+                    // Padding in base al tipo: numerico=padStart, alfanumerico=padEnd
                     const cleanValue = editingValue.replace(/\s/g, '')
-                    const finalValue = cleanValue.padEnd(field.length, ' ').substring(0, field.length)
+                    let finalValue: string
+                    if (field.type === 'numeric') {
+                      finalValue = cleanValue.padStart(field.length, ' ').substring(0, field.length)
+                    } else {
+                      finalValue = cleanValue.padEnd(field.length, ' ').substring(0, field.length)
+                    }
                     saveInlineEdit(recordIndex, `field_${fieldId}`, finalValue)
                     e.currentTarget.blur()
                   }
@@ -227,9 +233,14 @@ export default function Home() {
                   }
                 }}
                 onBlur={() => {
-                  // Tutti i campi: rimuovi spazi e applica padding a destra (valori allineati a sinistra)
+                  // Padding in base al tipo: numerico=padStart, alfanumerico=padEnd
                   const cleanValue = editingValue.replace(/\s/g, '')
-                  const finalValue = cleanValue.padEnd(field.length, ' ').substring(0, field.length)
+                  let finalValue: string
+                  if (field.type === 'numeric') {
+                    finalValue = cleanValue.padStart(field.length, ' ').substring(0, field.length)
+                  } else {
+                    finalValue = cleanValue.padEnd(field.length, ' ').substring(0, field.length)
+                  }
                   saveInlineEdit(recordIndex, `field_${fieldId}`, finalValue)
                 }}
               />
@@ -327,9 +338,14 @@ export default function Home() {
       const newRecords = [...prev]
       const field = ROSS_FIELDS.find(f => `field_${f.id}` === fieldId)
       if (field) {
-        // Tutti i campi: rimuovi spazi esistenti e applica padding a destra (valori allineati a sinistra)
+        // Padding in base al tipo di campo: numerico = padStart, alfanumerico = padEnd
         const cleanValue = value.toString().replace(/\s/g, '')
-        let paddedValue = cleanValue.padEnd(field.length, ' ')
+        let paddedValue: string
+        if (field.type === 'numeric') {
+          paddedValue = cleanValue.padStart(field.length, ' ')
+        } else {
+          paddedValue = cleanValue.padEnd(field.length, ' ')
+        }
 
         // Tronca se troppo lungo (sicurezza aggiuntiva)
         paddedValue = paddedValue.substring(0, field.length)
@@ -608,7 +624,12 @@ export default function Home() {
       for (const field of ROSS_FIELDS) {
         const value = getTrimmedValue(record, `field_${field.id}`)
         const cleanValue = value.trim()
-        let paddedValue = cleanValue.padEnd(field.length, ' ')
+        let paddedValue: string
+        if (field.type === 'numeric') {
+          paddedValue = cleanValue.padStart(field.length, ' ')
+        } else {
+          paddedValue = cleanValue.padEnd(field.length, ' ')
+        }
         paddedValue = paddedValue.substring(0, field.length)
         recordContent += paddedValue
       }
